@@ -8,26 +8,8 @@
 	
 	<!-- 2.3.0.2 -->
 	
-	<!-- controller -->
-	
-	<!-- <file path="admin/controller/common/column_left.php">
-		<operation>
-			<search><![CDATA[if ($this->user->hasPermission('access', 'catalog/review')) {]]></search>
-			<add position="before"><![CDATA[
-				if ($this->config->get('ReviewExt_status')) {
-					$this->load->language('common/ReviewExt');
-	
-					if ($this->user->hasPermission('access', 'catalog/ReviewExt')) {		
-						$catalog[] = array(
-							'name'	   => $this->language->get('text_ReviewExt'),
-							'href'     => $this->url->link('catalog/ReviewExt', 'token=' . $this->session->data['token'], true),
-							'children' => array()		
-						);		
-					}
-				}
-			]]></add>
-		</operation>		
-	</file> -->
+	<!-- admin -->
+	<!-- admin/controller -->
 
 <!-- *** ok ***  -->
 	<file path="admin/controller/catalog/review.php">
@@ -91,12 +73,9 @@
 				} else {
 					$review_images = array();
 				}
-
 				$data['review_images'] = array();
 				$this->load->model('tool/image');
-
 				foreach ($review_images as $review_image) {
-
 					if (is_file(DIR_IMAGE . $review_image['image'])) {
 						$image = $review_image['image'];
 						$thumb = $review_image['image'];
@@ -104,7 +83,6 @@
 						$image = '';
 						$thumb = 'no_image.png';
 					}
-
 					$data['review_images'][] = array(
 						'image'      => $image,
 						'thumb'      => $this->model_tool_image->resize($thumb, 100, 100),
@@ -151,7 +129,6 @@
 						"', image = '" . $this->db->escape($review_image['image']) . " '");
 					}
 				}
-
 				]]>
 			</add>
 		</operation>
@@ -163,11 +140,7 @@
 				]]>
 			</add>
 		</operation>
-
-
 	</file>
-
-
 
 <!-- !!!!!!!!! -->
 	<file path="catalog/model/catalog/product.php">
@@ -179,8 +152,6 @@
 		</operation>
 	</file>
 <!-- ok -->
-
-
 
 	<!-- view -->
 <!-- 20200401 -->
@@ -230,15 +201,6 @@
 <!-- //ok -->
 	</file>
 
-
-
-
-
-
-
-
-
-
   <!-- ************** language  **************** -->
 	<file path="admin/language/en-gb/catalog/review.php">
 		<operation>
@@ -275,6 +237,120 @@
 
 	</file>
 <!-- //ok -->
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ -->
+<!-- catalog/controller -->
+	<file path="catalog/controller/product/product.php">
+		<operation>
+			<search><![CDATA[$results = $this->model_catalog_review->getReviewsByProductId($this->request->get['product_id'], ($page - 1) * 5, 5);]]></search>
+			<add position="after"><![CDATA[
+				$this->load->model('tool/image');
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$data['reviews'][] = array(]]></search>
+			<add position="before"><![CDATA[
+			$images_org = $this->model_catalog_review->getReviewImages($result['review_id']);
+			$images = array();
+			foreach ($images_org as $image) {
+				if (is_file(DIR_IMAGE . $image['image'])) {
+					$thumb = $this->model_tool_image->resize($image['image'], 50, 50);
+				} else {
+					$thumb = $this->model_tool_image->resize('no_image.png', 50, 50);
+				}
+				$images[] = array(
+					'image' => $image['image'],
+					'popup' => $this->model_tool_image->resize($image['image'], $this->config->get($this->config->get('config_theme') . '_image_popup_width'), $this->config->get($this->config->get('config_theme') . '_image_popup_height')),
+					'thumb' => $this->model_tool_image->resize($image['image'], $this->config->get($this->config->get('config_theme') . '_image_additional_width'), $this->config->get($this->config->get('config_theme') . '_image_additional_height'))
+//??					'thumb' => $thumb
+				);
+				}
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[(int)$result['rating'],]]></search>
+			<add position="after"><![CDATA[
+				'images'  => $images,
+			]]></add>
+		</operation>		
+	</file>
+
+<!-- ok -->
+
+<!-- catalog/model -->
+	<file path="catalog/model/catalog/review.php">
+		<operation>
+			<search><![CDATA[public function getReviewsByProductId($product_id]]></search>
+			<add position="before"><![CDATA[
+				public function getReviewImages($review_id) {
+					$sql = "SELECT i.review_image_id, i.image FROM " . DB_PREFIX . "review_images i WHERE i.review_id = '" . (int)$review_id . "'";
+					$query = $this->db->query($sql);
+					return $query->rows;
+				}
+				]]>
+			</add>
+		</operation>
+
+	</file>
+
+
+  <!-- ************** language  **************** -->
+	<file path="catalog/language/en-gb/product/product.php">
+		<operation>
+			<search><![CDATA[<?php]]></search>
+			<add position="after"><![CDATA[
+				$_['heading_title']     = 'Photo';
+			]]></add>
+		</operation>		
+	</file>
+
+	<file path="catalog/language/ru-ru/product/product.php">
+		<operation>
+			<search><![CDATA[<?php]]></search>
+			<add position="after"><![CDATA[
+				$_['heading_title']     = 'Фото';
+			]]></add>
+		</operation>		
+	</file>
+<!-- ok -->
+
+<!-- *********  catalog/view ************* -->
+	<file path="catalog/view/theme/*/template/product/review.tpl">
+		<operation>
+			<search><![CDATA[</table>]]></search>
+			<add position="before"><![CDATA[
+				<?php if (count($review['images'])) { ?>
+				<tr>
+					<td colspan="2">
+						<ul class="thumbnails">
+							<?php $image_row = 0; ?>
+							<?php foreach ($review['images'] as $image) { ?>
+								<li class="image-additional">
+									<a class="thumbnail" href="<?php echo $image['popup']; ?>" title="<?php echo $image['popup'];  ?>"> 
+										<img src="<?php echo $image['thumb']; ?>" title="<?php echo $image['thumb']; ?>" alt="<?php echo $image['thumb']; ?>" />
+									</a></li>
+								<?php $image_row++; ?>
+							<?php } ?>
+						</ul>
+				</td>
+				</tr>
+				<?php } ?>
+			]]></add>
+		</operation>		
+	</file>
+
+
+
+
+
+
+
+
+
+
+
 
 	
 </modification>
