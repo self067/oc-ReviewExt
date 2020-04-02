@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<name>ReviewExt with photos</name>
+	<code>ReviewExt.ocmod</code>
+	<author>https://lmaa.ru/</author>
+	<version>1.0.0</version>
+	<link>https://lmaa.ru/</link>
+	
+	<!-- 2.3.0.2 -->
+	
+	<!-- controller -->
+	
+	<!-- <file path="admin/controller/common/column_left.php">
+		<operation>
+			<search><![CDATA[if ($this->user->hasPermission('access', 'catalog/review')) {]]></search>
+			<add position="before"><![CDATA[
+				if ($this->config->get('ReviewExt_status')) {
+					$this->load->language('common/ReviewExt');
+	
+					if ($this->user->hasPermission('access', 'catalog/ReviewExt')) {		
+						$catalog[] = array(
+							'name'	   => $this->language->get('text_ReviewExt'),
+							'href'     => $this->url->link('catalog/ReviewExt', 'token=' . $this->session->data['token'], true),
+							'children' => array()		
+						);		
+					}
+				}
+			]]></add>
+		</operation>		
+	</file> -->
+
+<!-- *** ok ***  -->
+	<file path="admin/controller/catalog/review.php">
+		<operation>
+			<search><![CDATA['date_added' => date($this->language->get('date_format_short'), strtotime($result['date_added'])),]]></search>
+			<add position="after"><![CDATA[
+				'images'  => $images,
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$data['column_date_added'] = $this->language->get('column_date_added');]]></search>
+			<add position="after"><![CDATA[
+				$data['column_images'] = $this->language->get('column_images');
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$data['entry_date_added'] = $this->language->get('entry_date_added');]]></search>
+			<add position="after"><![CDATA[
+				$data['entry_images'] = $this->language->get('entry_images');
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$data[$results = $this->model_catalog_review->getReviews($filter_data);]]></search>
+			<add position="after"><![CDATA[
+				$this->load->model('tool/image');
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$data[$data['reviews'][] = array(]]></search>
+			<add position="before"><![CDATA[
+
+					$images_org = $this->model_catalog_review->getReviewImages($result['review_id']);
+					$images = array();
+
+					foreach ($images_org as $image) {
+						if (is_file(DIR_IMAGE . $image['image'])) {
+							$thumb = $this->model_tool_image->resize($image['image'], 40, 40);
+						} else {
+							$thumb = $this->model_tool_image->resize('no_image.png', 40, 40);
+						}
+						$images[] = array(
+							'image' => $image['image'],
+							'thumb' => $thumb
+						);
+					}
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[if (isset($this->request->post['status']))]]></search>
+			<add position="before"><![CDATA[
+				// Images
+				if (isset($this->request->post['review_images'])) {
+					$review_images = $this->request->post['review_image'];
+				} elseif (isset($this->request->get['review_id'])) {
+					$review_images = $this->model_catalog_review->getReviewImages($this->request->get['review_id']);
+				} else {
+					$review_images = array();
+				}
+
+				$data['review_images'] = array();
+				$this->load->model('tool/image');
+
+				foreach ($review_images as $review_image) {
+
+					if (is_file(DIR_IMAGE . $review_image['image'])) {
+						$image = $review_image['image'];
+						$thumb = $review_image['image'];
+					} else {
+						$image = '';
+						$thumb = 'no_image.png';
+					}
+
+					$data['review_images'][] = array(
+						'image'      => $image,
+						'thumb'      => $this->model_tool_image->resize($thumb, 100, 100),
+					);
+				}
+			]]></add>
+		</operation>		
+
+	</file>
+<!-- //ok -->
+			
+	<!-- model -->
+ 	<!-- ok 20200331 -->
+	<file path="admin/model/catalog/product.php">
+		<operation>
+			<search><![CDATA[$this->db->query("DELETE FROM " . DB_PREFIX . "review WHERE product_id = '" . (int)$product_id . "'");]]></search>
+			<add position="before"><![CDATA[
+				$this->db->query("DELETE FROM " . DB_PREFIX . "review_images WHERE product_id = '" . (int)$product_id . "'");	
+				]]>
+			</add>
+		</operation>
+	</file>
+
+	<file path="admin/model/catalog/review.php">
+		<operation>
+			<search><![CDATA[public function getReviews($data = array())]]></search>
+			<add position="before"><![CDATA[
+				public function getReviewImages($review_id) {
+					$sql = "SELECT i.review_image_id i.image FROM " . DB_PREFIX . "review_images i WHERE i.review_id = '" . (int)$review_id . "'";
+					$query = $this->db->query($sql);
+					return $query->rows;
+				}
+				]]>
+			</add>
+		</operation>
+
+		<operation>
+			<search><![CDATA[$review_id = $this->db->getLastId();]]></search>
+			<add position="after"><![CDATA[
+				if (isset($data['review_images'])) {
+					foreach ($data['review_images'] as $review_image) {
+						$this->db->query("INSERT INTO " . DB_PREFIX . "review_images SET product_id = '" . (int)$product_id . 
+						"', review_id = '" . (int)$review_id . 
+						"', image = '" . $this->db->escape($review_image['image']) . " '");
+					}
+				}
+
+				]]>
+			</add>
+		</operation>
+
+		<operation>
+			<search><![CDATA[$this->db->query("DELETE FROM " . DB_PREFIX . "review WHERE review_id = '" . (int)$review_id . "'");]]></search>
+			<add position="before"><![CDATA[
+				$this->db->query("DELETE FROM " . DB_PREFIX . "review_images WHERE review_id = '" . (int)$review_id . "'");		
+				]]>
+			</add>
+		</operation>
+
+
+	</file>
+
+
+
+<!-- !!!!!!!!! -->
+	<file path="catalog/model/catalog/product.php">
+		<operation>
+			<search><![CDATA[$this->db->query("DELETE FROM " . DB_PREFIX . "review WHERE product_id = '" . (int)$product_id . "'");]]></search>
+			<add position="before"><![CDATA[
+				$this->db->query("DELETE FROM " . DB_PREFIX . "review_images WHERE product_id = '" . (int)$product_id . "'");	]]>
+			</add>
+		</operation>
+	</file>
+<!-- ok -->
+
+
+
+	<!-- view -->
+<!-- 20200401 -->
+	<file path="admin/view/template/catalog/review_list.tpl">
+		<operation>
+			<search><![CDATA[<td class="text-right"><?php echo $column_action; ?></td>]]></search>
+			<add position="before"><![CDATA[
+          <td class="text-center"><?php echo $column_images; ?></td>
+			]]></add>
+		</operation>		
+<!-- //ok -->
+		<operation>
+			<search><![CDATA[<td class="text-left"><?php echo $review['date_added']; ?></td>]]></search>
+			<add position="after"><![CDATA[
+                  <td class="text-left"><?php $image_row = 0; foreach ($review['images'] as $reimg){ ?>
+                    <img src="<?php echo $reimg['thumb']; ?>" class="img-additional" alt="" title=""/>
+                    <?php $image_row++;}?> 
+                  </td>                               
+			]]></add>
+		</operation>		
+	</file>
+<!-- //ok -->
+
+
+	<file path="admin/view/template/catalog/review_form.tpl">
+		<operation>
+			<search><![CDATA[<label class="col-sm-2 control-label" for="input-status"><?php echo $entry_status; ?></label>]]></search>
+			<add position="before"><![CDATA[
+
+          <label class="col-sm-2 control-label" for="input-image"><?php echo $entry_images; ?></label>
+            <div class="col-sm-10">
+              <?php $image_row = 0; ?>
+              <?php foreach ($review_images as $review_image) { ?>
+              <tr id="image-row<?php echo $image_row; ?>">
+                <td class="text-left">
+                  <img src="<?php echo $review_image['thumb']; ?>" alt="" title="" data-placeholder="<?php echo $placeholder; ?>" class="img-thumbnail"/>
+                </td>
+              </tr>
+              <?php $image_row++; ?>
+              <?php } ?>
+            </div>
+          </div>
+          <div class="form-group">
+        
+			]]></add>
+		</operation>		
+<!-- //ok -->
+	</file>
+
+
+
+
+
+
+
+
+
+
+  <!-- ************** language  **************** -->
+	<file path="admin/language/en-gb/catalog/review.php">
+		<operation>
+			<search><![CDATA[$_['column_action']]]></search>
+			<add position="before"><![CDATA[
+				$_['column_images'] = 'Photos';
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$_['entry_date_added']]]></search>
+			<add position="before"><![CDATA[
+				$_['entry_images'] = 'Photos';
+			]]></add>
+		</operation>		
+
+	</file>
+<!-- //ok -->
+
+	<file path="admin/language/ru-ru/catalog/review.php">
+		<operation>
+			<search><![CDATA[$_['column_action']]]></search>
+			<add position="before"><![CDATA[
+				$_['column_images'] = 'Фото';
+			]]></add>
+		</operation>		
+
+		<operation>
+			<search><![CDATA[$_['entry_date_added']]]></search>
+			<add position="before"><![CDATA[
+				$_['entry_images'] = 'Фото';
+			]]></add>
+		</operation>		
+
+	</file>
+<!-- //ok -->
+
+	
+</modification>
