@@ -322,9 +322,9 @@
 			<search><![CDATA[</table>]]></search>
 			<add position="before"><![CDATA[
 				<?php if (count($review['images'])) { ?>
-				<tr>
+				<tr valign="middle">
 					<td colspan="2">
-						<ul class="thumbnails">
+						<ul class="thumbnails thumbnails-revs">
 							<?php $image_row = 0; ?>
 							<?php foreach ($review['images'] as $image) { ?>
 								<li class="image-additional">
@@ -339,6 +339,24 @@
 				<?php } ?>
 			]]></add>
 		</operation>		
+
+		<operation>
+			<search><![CDATA[<p><?php echo $text_no_reviews; ?></p>]]></search>
+			<add position="after" offset="2"><![CDATA[
+				<script>
+					$(document).ready(function() {
+					$('.thumbnails-revs').magnificPopup({
+						type:'image',
+						delegate: 'a',
+						gallery: {
+							enabled:false
+						}
+					});
+				});
+				</script>
+			]]></add>
+		</operation>		
+
 	</file>
 
 

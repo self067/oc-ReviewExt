@@ -18,9 +18,9 @@
 
 
   <?php if (count($review['images'])) { ?>
-  <tr>
+  <tr valign="middle">
     <td colspan="2">
-      <ul class="thumbnails">
+      <ul class="thumbnails thumbnails-revs">
         <?php $image_row = 0; ?>
         <?php foreach ($review['images'] as $image) { ?>
           <li class="image-additional">
@@ -34,10 +34,21 @@
   </tr>
   <?php } ?>
 
-
 </table>
 <?php } ?>
 <div class="text-right"><?php echo $pagination; ?></div>
 <?php } else { ?>
 <p><?php echo $text_no_reviews; ?></p>
 <?php } ?>
+
+<script>
+  $(document).ready(function() {
+	$('.thumbnails-revs').magnificPopup({
+		type:'image',
+		delegate: 'a',
+		gallery: {
+			enabled:false
+		}
+	});
+});
+</script>
