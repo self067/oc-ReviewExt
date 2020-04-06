@@ -1,9 +1,16 @@
 <?php
 class ModelCatalogReview extends Model {
 	public function addReview($product_id, $data) {
+
 		$this->db->query("INSERT INTO " . DB_PREFIX . "review SET author = '" . $this->db->escape($data['name']) . "', customer_id = '" . (int)$this->customer->getId() . "', product_id = '" . (int)$product_id . "', text = '" . $this->db->escape($data['text']) . "', rating = '" . (int)$data['rating'] . "', date_added = NOW()");
 
 		$review_id = $this->db->getLastId();
+
+		if (isset($data['review_image'])) {
+			foreach ($data['review_image'] as $review_image) {
+				$this->db->query("INSERT INTO " . DB_PREFIX . "review_images SET review_id = '" . (int)$review_id . "', product_id = '" . (int)$product_id . "', image = '" . $this->db->escape($review_image) . "'");
+			}
+		}
 
 		if (in_array('review', (array)$this->config->get('config_mail_alert'))) {
 			$this->load->language('mail/review');

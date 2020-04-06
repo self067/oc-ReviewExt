@@ -100,7 +100,42 @@
                     &nbsp;<?php echo $entry_good; ?></div>
                 </div>
                 <?php echo $captcha; ?>
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+                <div class="form-group">
+                  <div class="col-sm-12">
+                    <label class="control-label" for="input-review"><?php echo $entry_review_images; ?></label>
+
+                    <table id="images" class="table table-striped table-bordered table-hover">
+                      <!-- <thead>
+                        <tr>
+                          <td class="text-left" ><?php echo $entry_review_images; ?></td>
+                        </tr>
+                      </thead> -->
+                      <tbody>
+                        <!-- <?php $image_row = 0; ?>
+                        <td class="text-center"></td> -->
+
+                      </tbody>
+                    </table>
+
+                  </div>
+                </div>
+
+
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
                 <div class="buttons clearfix">
+                  <div class="pull-left">
+                    <button type="button" id="button-review_addimages" data-loading-text="<?php echo $text_loading; ?>" class="btn btn-default btn-block"><i class="fa fa-upload"></i> <?php echo $button_upload_image; ?></button>
+                  </div>
+
                   <div class="pull-right">
                     <button type="button" id="button-review" data-loading-text="<?php echo $text_loading; ?>" class="btn btn-primary"><?php echo $button_continue; ?></button>
                   </div>
@@ -481,12 +516,97 @@ $('.time').datetimepicker({
 	pickDate: false
 });
 
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+var image_row = <?php echo $image_row; ?>;
+// function addImage() {
+// 	html  = '<tr id="image-row' + image_row + '">';
+//   html += '  <td class="text-left"><a href="" id="thumb-image' + image_row + '"data-toggle="image" class="img-thumbnail"><img src="<?php echo $review_image['thumb']; ?>" alt="" title="" data-placeholder="<?php echo $placeholder; ?>" /></a><input type="hidden" name="review_image[' + image_row + '][image]" value="<?php echo $review_image['image']; ?>" id="input-image' + image_row + '" />';
+//   html += '  <button type="button" onclick="$(\'#image-row' + image_row  + '\').remove();" data-toggle="tooltip" title="<?php echo $button_remove; ?>" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button></td>';
+// 	html += '</tr>';
+
+// 	$('#images tbody').append(html);
+//   image_row++;
+  
+// }
+
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+function addReviewImage( image_id, preview ) {
+  html  = '';
+  // html  = '<tr id="image-row' + image_row + '">';
+  
+  html += '  <td class="text-center">';
+  html += '<img src="image/'+ image_id +'" alt="" title="" data-placeholder="<?php echo $placeholder;?>"  style="height: auto; width: 100px;"/>';
+  html += '<input type="hidden" name="review_image[' + image_row + ']" value="'+image_id+'" id="input-image' + image_row + '" />';
+  // html += '  <button type="button" onclick="$(\'#image-row' + image_row  + '\').remove();" data-toggle="tooltip" title="<?php echo $button_remove; ?>" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button>';
+  html += '</td>';
+	// html += '</tr>';
+
+	$('#images tbody').append(html);
+  image_row++;
+  // <?php $image_row++; ?>
+
+}
+
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$('button[id^=\'button-review_addimages\']').on('click', function() {
+	var node = this;
+	$('#form-upload_image').remove();
+
+	$('body').prepend('<form enctype="multipart/form-data" id="form-upload_image" style="display: none;"><input type="file" name="file"  accept="image/*,image/jpeg" /></form>');
+
+	$('#form-upload_image input[name=\'file\']').trigger('click');
+
+	if (typeof timer != 'undefined') {
+    	clearInterval(timer);
+	}
+
+	timer = setInterval(function() {
+		if ($('#form-upload_image input[name=\'file\']').val() != '') {
+			clearInterval(timer);
+
+			$.ajax({
+				// url: 'index.php?route=tool/upload',
+				url: 'index.php?route=tool/reviewext',
+				type: 'post',
+				dataType: 'json',
+				data: new FormData($('#form-upload_image')[0]),
+				cache: false,
+				contentType: false,
+				processData: false,
+				beforeSend: function() {
+					$(node).button('loading');
+				},
+				complete: function() {
+					$(node).button('reset');
+				},
+				success: function(json) {
+					$('.text-danger').remove();
+
+					if (json['error']) {
+						$(node).parent().find('input').after('<div class="text-danger">' + json['error'] + '</div>');
+					}
+
+					if (json['success']) {
+            // alert(json['success']);
+            addReviewImage( json['file'], json['preview'] );
+					}
+				},
+				error: function(xhr, ajaxOptions, thrownError) {
+					alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+				}
+			});
+		}
+	}, 500);
+});
+
+////////////////////////////////////////////////////////////////// 
 $('button[id^=\'button-upload\']').on('click', function() {
 	var node = this;
 
 	$('#form-upload').remove();
 
-	$('body').prepend('<form enctype="multipart/form-data" id="form-upload" style="display: none;"><input type="file" name="file" /></form>');
+	$('body').prepend('<form enctype="multipart/form-data" id="form-upload" style="display: none;"><input type="file" name="file"/></form>');
 
 	$('#form-upload input[name=\'file\']').trigger('click');
 
@@ -547,6 +667,8 @@ $('#review').delegate('.pagination a', 'click', function(e) {
 $('#review').load('index.php?route=product/product/review&product_id=<?php echo $product_id; ?>');
 
 $('#button-review').on('click', function() {
+
+  console.log($("#form-review").serialize());
 	$.ajax({
 		url: 'index.php?route=product/product/write&product_id=<?php echo $product_id; ?>',
 		type: 'post',
@@ -558,11 +680,17 @@ $('#button-review').on('click', function() {
 		complete: function() {
 			$('#button-review').button('reset');
 		},
+		error: function( jqXHR, textStatus, errorThrown ) {
+      console.log( errorThrown);
+
+    },
+
 		success: function(json) {
 			$('.alert-success, .alert-danger').remove();
 
 			if (json['error']) {
 				$('#review').after('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + '</div>');
+        console.log(json['error']);
 			}
 
 			if (json['success']) {
@@ -570,7 +698,10 @@ $('#button-review').on('click', function() {
 
 				$('input[name=\'name\']').val('');
 				$('textarea[name=\'text\']').val('');
-				$('input[name=\'rating\']:checked').prop('checked', false);
+        $('input[name=\'rating\']:checked').prop('checked', false);
+        $('#images tbody').empty();
+
+
 			}
 		}
 	});

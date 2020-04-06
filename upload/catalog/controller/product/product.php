@@ -248,6 +248,7 @@ class ControllerProductProduct extends Controller {
 			$data['entry_name'] = $this->language->get('entry_name');
 			$data['entry_review'] = $this->language->get('entry_review');
 			$data['entry_rating'] = $this->language->get('entry_rating');
+			$data['entry_review_images'] = $this->language->get('entry_review_images');
 			$data['entry_good'] = $this->language->get('entry_good');
 			$data['entry_bad'] = $this->language->get('entry_bad');
 
@@ -255,6 +256,7 @@ class ControllerProductProduct extends Controller {
 			$data['button_wishlist'] = $this->language->get('button_wishlist');
 			$data['button_compare'] = $this->language->get('button_compare');
 			$data['button_upload'] = $this->language->get('button_upload');
+			$data['button_upload_image'] = $this->language->get('button_upload_image');
 			$data['button_continue'] = $this->language->get('button_continue');
 
 			$this->load->model('catalog/review');
@@ -390,6 +392,42 @@ class ControllerProductProduct extends Controller {
 
 			$data['reviews'] = sprintf($this->language->get('text_reviews'), (int)$product_info['reviews']);
 			$data['rating'] = (int)$product_info['rating'];
+
+
+////@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@			// 
+$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+$data['button_image_add'] = $this->language->get('button_image_add');
+$data['button_remove'] = $this->language->get('button_remove');
+
+		// Images
+		if (isset($this->request->post['review_images'])) {
+			$review_images = $this->request->post['review_images'];
+		} elseif (isset($this->request->get['review_id'])) {
+			$review_images = $this->model_catalog_review->getReviewImages($this->request->get['review_id']);
+		} else {
+			$review_images = array();
+		}
+
+		$data['review_images'] = array();
+
+		foreach ($review_images as $review_image) {
+			if (is_file(DIR_IMAGE . $review_image['image'])) {
+				$image = $review_image['image'];
+				$thumb = $review_image['image'];
+			} else {
+				$image = '';
+				$thumb = 'no_image.png';
+			}
+
+			$data['review_images'][] = array(
+				'image'      => $image,
+				'thumb'      => $this->model_tool_image->resize($thumb, 100, 100)
+			);
+		}
+
+// //
+////@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@			// 
+
 
 			// Captcha
 			if ($this->config->get($this->config->get('config_captcha') . '_status') && in_array('review', (array)$this->config->get('config_captcha_page'))) {
@@ -534,8 +572,8 @@ class ControllerProductProduct extends Controller {
 
 			$this->document->setTitle($this->language->get('text_error'));
 
-			$data['heading_title'] = $this->language->get('text_error');
-
+			$data['heading_title'] = $this->language->get('heading_title');
+// ?
 			$data['text_error'] = $this->language->get('text_error');
 
 			$data['button_continue'] = $this->language->get('button_continue');

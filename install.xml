@@ -275,8 +275,75 @@
 				'images'  => $images,
 			]]></add>
 		</operation>		
-	</file>
+<!-- ok -->
 
+		<operation>
+			<search><![CDATA[$data['entry_good'] = $this->language->get('entry_good');]]></search>
+			<add position="before"><![CDATA[
+				$data['entry_review_images'] = $this->language->get('entry_review_images');
+			]]></add>
+		</operation>		
+<!-- ok -->
+
+		<operation>
+			<search><![CDATA[$data[$data['rating'] = (int)$product_info['rating'];]]></search>
+			<add position="after"><![CDATA[
+				$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+				$data['button_image_add'] = $this->language->get('button_image_add');
+				$data['button_remove'] = $this->language->get('button_remove');
+
+				// Images
+				if (isset($this->request->post['review_images'])) {
+					$review_images = $this->request->post['review_images'];
+				} elseif (isset($this->request->get['review_id'])) {
+					$review_images = $this->model_catalog_review->getReviewImages($this->request->get['review_id']);
+				} else {
+					$review_images = array();
+				}
+
+				$data['review_images'] = array();
+
+				foreach ($review_images as $review_image) {
+					if (is_file(DIR_IMAGE . $review_image['image'])) {
+						$image = $review_image['image'];
+						$thumb = $review_image['image'];
+					} else {
+						$image = '';
+						$thumb = 'no_image.png';
+					}
+
+					$data['review_images'][] = array(
+						'image'      => $image,
+						'thumb'      => $this->model_tool_image->resize($thumb, 100, 100)
+					);
+				}
+
+				// //
+			]]></add>
+		</operation>		
+<!-- ok -->
+
+		<operation>
+			<search><![CDATA[$data[$data['button_upload'] = $this->language->get('button_upload');]]></search>
+			<add position="before"><![CDATA[
+				$data['button_upload_image'] = $this->language->get('button_upload_image');
+			]]></add>
+		</operation>		
+<!-- ok -->
+
+
+	</file>
+<!-- ok -->
+
+
+	<file path="catalog/controller/tool/upload.php">
+		<operation>
+			<search><![CDATA[$json['success'] = $this->language->get('text_upload');]]></search>
+			<add position="before"><![CDATA[
+				$json['photo'] = DIR_UPLOAD . $file;
+			]]></add>
+		</operation>		
+	</file>
 <!-- ok -->
 
 <!-- catalog/model -->
@@ -293,6 +360,20 @@
 			</add>
 		</operation>
 
+		<operation>
+			<search><![CDATA[if (in_array('review', (array)$this->config->get('config_mail_alert')))]]></search>
+			<add position="before"><![CDATA[
+				// ok 20200406
+				if (isset($data['review_image'])) {
+					foreach ($data['review_image'] as $review_image) {
+						$this->db->query("INSERT INTO " . DB_PREFIX . "review_images SET review_id = '" . (int)$review_id . "', product_id = '" . (int)$product_id . "', image = '" . $this->db->escape($review_image) . "'");
+					}
+				}
+
+				]]>
+			</add>
+		</operation>
+
 	</file>
 
 
@@ -304,7 +385,16 @@
 				$_['heading_title']     = 'Photo';
 			]]></add>
 		</operation>		
+
+		<operation>
+			<search><![CDATA[$_['entry_bad']]]></search>
+			<add position="before"><![CDATA[
+				$_['entry_review_images'] = 'Photos';
+			]]></add>
+		</operation>		
+
 	</file>
+
 
 	<file path="catalog/language/ru-ru/product/product.php">
 		<operation>
@@ -313,7 +403,37 @@
 				$_['heading_title']     = 'Фото';
 			]]></add>
 		</operation>		
+
+		<operation>
+			<search><![CDATA[$_['entry_bad']]]></search>
+			<add position="before"><![CDATA[
+				$_['entry_review_images'] = 'Фото';
+			]]></add>
+		</operation>		
+
 	</file>
+
+
+
+	<file path="catalog/language/en-gb/en-gb.php">
+		<operation>
+			<search><![CDATA[$_['button_upload']]]></search>
+			<add position="before"><![CDATA[
+				$_['button_upload_image']         = 'Upload Photo';
+			]]></add>
+		</operation>		
+	</file>
+
+	<file path="catalog/language/ru-ru/ru-ru.php">
+		<operation>
+			<search><![CDATA[$_['button_upload']]]></search>
+			<add position="before"><![CDATA[
+				$_['button_upload_image']         = 'Загрузить изображение';
+			]]></add>
+		</operation>		
+	</file>
+
+
 <!-- ok -->
 
 <!-- *********  catalog/view ************* -->
@@ -356,6 +476,30 @@
 				</script>
 			]]></add>
 		</operation>		
+
+	</file>
+<!-- ok -->
+
+	<file path="catalog/view/theme/*/template/product/product.tpl">
+		<operation>
+			<search><![CDATA[<button type="button" id="button-review"]]></search>
+			<add position="before" offset="-1"><![CDATA[
+				<div class="pull-left">
+					<button type="button" id="button-review_addimages" data-loading-text="<?php echo $text_loading; ?>" class="btn btn-default btn-block"><i class="fa fa-upload"></i> <?php echo $button_upload; ?></button>
+				</div>
+			]]></add>
+		</operation>		
+<!-- ok -->
+
+		<operation>
+			<search><![CDATA[$('button[id^=\'button-upload\']').on('click', function()]]></search>
+			<add position="before" offset="-1"><![CDATA[
+
+<!-- ?????? -->
+
+			]]></add>
+		</operation>		
+
 
 	</file>
 
